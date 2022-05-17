@@ -72,20 +72,25 @@ rcl_subscription_init(
 
   // Expand and remap the given topic name.
   char * remapped_topic_name = NULL;
-  rcl_ret_t ret = rcl_node_resolve_name(
-    node,
-    topic_name,
-    *allocator,
-    false,
-    false,
-    &remapped_topic_name);
-  if (ret != RCL_RET_OK) {
-    if (ret == RCL_RET_TOPIC_NAME_INVALID || ret == RCL_RET_UNKNOWN_SUBSTITUTION) {
-      ret = RCL_RET_TOPIC_NAME_INVALID;
-    } else if (ret != RCL_RET_BAD_ALLOC) {
-      ret = RCL_RET_ERROR;
+  rcl_ret_t ret;
+  if (!options->qos.avoid_ros_namespace_conventions) {
+    ret = rcl_node_resolve_name(
+      node,
+      topic_name,
+      *allocator,
+      false,
+      false,
+      &remapped_topic_name);
+    if (ret != RCL_RET_OK) {
+      if (ret == RCL_RET_TOPIC_NAME_INVALID || ret == RCL_RET_UNKNOWN_SUBSTITUTION) {
+        ret = RCL_RET_TOPIC_NAME_INVALID;
+      } else if (ret != RCL_RET_BAD_ALLOC) {
+        ret = RCL_RET_ERROR;
+      }
+      goto cleanup;
     }
-    goto cleanup;
+  } else {
+    remapped_topic_name = rcutils_strdup(topic_name, *allocator);
   }
   RCUTILS_LOG_DEBUG_NAMED(
     ROS_PACKAGE_NAME, "Expanded and remapped topic name '%s'", remapped_topic_name);
